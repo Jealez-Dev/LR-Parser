@@ -1,5 +1,7 @@
-fun calcular(x:int;y:int) dev (int ; int) =
-    sea cuadrado = x * x en
-        caso y > 10 -> (cuadrado x)$
+fun probarResistenciaDelParser (x : entero; y : real; z : valor) dev (resultado : real) =
+    sea a = x + y ^ 3 * -5 / c (x, y), b = caso x > 0 -> y [] x <= 0 -> -y fcaso en
+        caso b -> sea temporal = a en temporal
+           [] a > b -> x ^ (y + 1)
+           [] a == b -> caso caso a -> b fcaso -> caso b -> a fcaso fcaso
         fcaso
 ffun
