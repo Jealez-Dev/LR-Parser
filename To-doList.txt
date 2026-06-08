@@ -13,3 +13,37 @@ Bloque 1: Configuración, Lectura de Archivos y Analizador Léxico (Lexer) — 1
     [x] Asegurar que si el Lexer detecta un carácter inesperado, imprima inmediatamente la línea, la naturaleza del error léxico y termine la ejecución del programa.
 
 Bloque 1: Completed
+
+Bloque 2: Redacción de la EBNF y Diseño del Parser — 1 Hora
+
+    [ ] Redactar el documento README escribiendo formalmente la especificación en formato EBNF del lenguaje recursivo LR basándote en la sintaxis provista.
+
+    [ ] Modelar mediante el paradigma orientado a objetos los elementos sintácticos indispensables (estructuras jerárquicas simples para expresiones e instrucciones si planeas validar mediante nodos).
+
+    [ ] Mapear mental u operativamente cada regla gramatical (<Prog>, <ParForm>, <Exp>, etc.) a una función específica que controlará el flujo del análisis.
+
+Bloque 2: Init
+
+Bloque 3: Implementación del Analizador Sintáctico (Parser) — 1.5 Horas
+
+    [ ] Escribir el cuerpo del Parser de Descenso Recursivo, creando las funciones principales correspondientes a cada producción gramatical (ej. parseProg(), parseParForm(), parseExp()).
+
+    [ ] Implementar un método auxiliar de verificación (comúnmente llamado match o consume) que compare el token actual con el esperado, avanzando en la lista de tokens si coincide.
+
+    [ ] Asegurar el correcto flujo recursivo del lenguaje LR, prestando especial atención a las expresiones anidadas y las cláusulas como <Condic> o <DecLoc>.
+
+    [ ] Integrar el sistema de control de fallos: ante cualquier discrepancia gramatical, el parser debe capturar la línea exacta del token en conflicto, imprimir la naturaleza del error sintáctico y abortar el proceso de inmediato.
+
+Bloque 4: Pruebas de Software y Optimización — 1 Hora
+
+    [ ] Crear manualmente al menos 3 archivos .esp de prueba independientes:
+
+        Un archivo con una función válida que cubra la recursividad.
+
+        Un archivo que rompa deliberadamente las reglas del Lexer (error léxico).
+
+        Un archivo con estructuras desordenadas u operadores mal colocados (error sintáctico).
+
+    [ ] Comprobar minuciosamente que ante un flujo completamente válido, el sistema imprima en la terminal la cadena exacta: Análisis OK.
+
+    [ ] Revisar el código para optimizar ciclos innecesarios y garantizar un consumo eficiente de memoria y tiempo al procesar las cadenas de texto.
