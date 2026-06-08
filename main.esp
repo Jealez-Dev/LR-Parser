@@ -1,0 +1,5 @@
+fun calcular(x:int;y:int) dev (int ; int) =
+    sea cuadrado = x * x en
+        caso y > 10 -> (cuadrado x)
+        fcaso
+ffun
