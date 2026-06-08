@@ -1,0 +1,15 @@
+Bloque 1: Configuración, Lectura de Archivos y Analizador Léxico (Lexer) — 1 Hora
+
+    [x] Crear un proyecto básico de Dart estructurado para ejecutarse por línea de comandos utilizando únicamente sus librerías nativas.
+
+    [x] Implementar la captura de argumentos por consola en la función main para recibir la ruta de un archivo con extensión .esp.
+
+    [x] Programar la lectura del archivo plano y la validación de su codificación.
+
+    [x] Diseñar el Lexer (Analizador Léxico): Define una clase Token orientado a objetos que almacene el tipo de token, su valor textual y el número de línea exacto donde fue hallado.
+
+    [x] Implementar la lógica para recorrer el archivo carácter por carácter y agruparlos en tokens (palabras clave como fun, ffun, caso, operadores, identificadores y constantes).
+
+    [x] Asegurar que si el Lexer detecta un carácter inesperado, imprima inmediatamente la línea, la naturaleza del error léxico y termine la ejecución del programa.
+
+Bloque 1: Completed
