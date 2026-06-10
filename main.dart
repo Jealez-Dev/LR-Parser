@@ -181,6 +181,7 @@ class ReaderFile {
         i++;
       }
     }
+    print(tokens.join('\n'));
     return tokens;
   }
 }
@@ -303,6 +304,7 @@ class Parser {
     if (i < tokens.length) {
       i++;
     }
+    print('Token actual: ${currentToken.toString()}');
   }
 
   void parseProg() {
@@ -450,116 +452,35 @@ class Parser {
   }
 
   void parseRelaction() {
-    if (currentToken.type.contains('operator') && currentToken.value == '¬') {
-      advance();
-      parseTerm();
-      return;
-    }
-
     parseTerm();
 
-    switch (currentToken.value) {
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '>':
-        advance();
-        parseTerm();
-        break;
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '<':
-        advance();
-        parseTerm();
-        break;
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '>=':
-        advance();
-        parseTerm();
-        break;
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '<=':
-        advance();
-        parseTerm();
-        break;
-
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '==':
-        advance();
-        parseTerm();
-        break;
-
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '!=':
-        advance();
-        parseTerm();
-        break;
-
-      default:
-        return;
+    final relOps = ['>', '<', '>=', '<=', '==', '!='];
+    while (currentToken.type.contains('operator') &&
+        relOps.contains(currentToken.value)) {
+      advance();
+      parseTerm();
     }
   }
 
   void parseTerm() {
     parseProduct();
 
-    switch (currentToken.value) {
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '+':
-        advance();
-        parseProduct();
-        break;
-      case _
-          when currentToken.type.contains('operator') &&
-              currentToken.value == '-':
-        advance();
-        parseProduct();
-        break;
-      default:
-        return;
-    }
-
-    if (currentToken.type.contains('operator') && currentToken.value != '->') {
+    while (currentToken.type.contains('operator') &&
+        (currentToken.value == '+' || currentToken.value == '-')) {
       advance();
-      parseRelaction();
+      parseProduct();
     }
   }
 
   void parseProduct() {
     parsePower();
 
-    if (currentToken.type.contains('operator')) {
-      switch (currentToken.value) {
-        case _
-            when currentToken.type.contains('operator') &&
-                currentToken.value == '*':
-          advance();
-          parsePower();
-          break;
-        case _
-            when currentToken.type.contains('operator') &&
-                currentToken.value == '/':
-          advance();
-          parsePower();
-          break;
-        case _
-            when currentToken.type.contains('operator') &&
-                currentToken.value == '%':
-          advance();
-          parsePower();
-          break;
-        default:
-          return;
-      }
-    }
-
-    if (currentToken.type.contains('operator') && currentToken.value != '->') {
+    while (currentToken.type.contains('operator') &&
+        (currentToken.value == '*' ||
+            currentToken.value == '/' ||
+            currentToken.value == '%')) {
       advance();
-      parseRelaction();
+      parsePower();
     }
   }
 
@@ -568,12 +489,7 @@ class Parser {
 
     if (currentToken.type.contains('operator') && currentToken.value == '^') {
       advance();
-      parseFactor();
-    }
-
-    if (currentToken.type.contains('operator') && currentToken.value != '->') {
-      advance();
-      parseRelaction();
+      parsePower();
     }
 
     return;
@@ -581,6 +497,14 @@ class Parser {
 
   void parseFactor() {
     final token = currentToken;
+
+    // Operador unario ¬: ahora tiene la precedencia más alta
+    if (token.type.contains('operator') && token.value == '¬') {
+      advance();
+      parseFactor(); // Llamada recursiva para permitir ¬¬a
+      return;
+    }
+
     if (token.type.contains('constant')) {
       parseConst();
     } else if (token.type.contains('keyword') && token.value == 'caso') {
@@ -709,25 +633,45 @@ class Parser {
   void parseIDOrFunctionOrVector() {
     if (currentToken.type.contains('identifier')) {
       advance();
-    }
-    if (currentToken.type.contains('delimiter') && currentToken.value == '(') {
-      advance();
-      parseParArg();
-      if (currentToken.type.contains('delimiter') &&
-          currentToken.value == ')') {
-        advance();
-      }
-    }
-    if (currentToken.type.contains('delimiter') && currentToken.value == '[') {
-      advance();
-      parseExp();
-      if (currentToken.type.contains('delimiter') &&
-          currentToken.value == ']') {
-        advance();
-      }
-    }
 
-    return;
+      while (true) {
+        if (currentToken.value == '(') {
+          advance();
+          if (currentToken.value != ')') {
+            parseParArg();
+          }
+          if (currentToken.value == ')') {
+            advance();
+          } else {
+            throw SyntaxError(
+              'Se esperaba ")" al cerrar parámetros',
+              lines[currentToken.line],
+              currentToken.value,
+            );
+          }
+        } else if (currentToken.value == '[') {
+          advance();
+          parseExp();
+          if (currentToken.value == ']') {
+            advance();
+          } else {
+            throw SyntaxError(
+              'Se esperaba "]" al cerrar índice',
+              lines[currentToken.line],
+              currentToken.value,
+            );
+          }
+        } else {
+          break;
+        }
+      }
+    } else {
+      throw SyntaxError(
+        'Se esperaba un identificador',
+        lines[currentToken.line],
+        currentToken.value,
+      );
+    }
   }
 
   void parseParArg() {

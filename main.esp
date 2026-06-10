@@ -1,8 +1,8 @@
 fun mcd (a : int) dev (m : int) =
     caso b == 0 -> a
          [] a == 0 -> b
-         [] a > b ^ b != 0 -> mcd (b, a % b)
-         [] a > c[i+1] -> b
+         [] a > b ^ b != 0 -> mcd (¬b, a % b)
+         [] a + ¬¬c[i(2,5,3)] -> b
     fcaso
 ffun
 
