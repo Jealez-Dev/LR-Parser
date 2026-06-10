@@ -61,15 +61,14 @@ class ReaderFile {
   }
 
   List<Token> extractTokens() {
-    for (String line in content) {
-      if (line.isEmpty) continue;
+    for (int lineNumber = 0; lineNumber < content.length; lineNumber++) {
+      String line = content[lineNumber];
 
-      int lineNumber = content.indexOf(line);
       int i = 0;
       while (i < line.length) {
         String letter = line[i];
 
-        // 1. PROCESAR PALABRAS (Keywords e Identifiers)
+        // 1. PROCESAR PALABRAS (Keywords, Identifiers y Tipos de Dato)
         if (isLetter(letter)) {
           String word = '';
           while (i < line.length && isLetter(line[i])) {
@@ -77,33 +76,55 @@ class ReaderFile {
             i++;
           }
 
+          if (word.contains('mod')) {
+            throw LexicalError(
+              'Caracter no permitido: ${word}, en este contexto, se usa % en vez de mod',
+              line,
+              i,
+            );
+          }
+
           if (Token.keywords.contains(word)) {
             tokens.add(Token(['keyword'], word, lineNumber));
+          } else if (Token.dataTypes.contains(word)) {
+            tokens.add(Token(['dataType'], word, lineNumber));
+          } else if (Token.constants.contains(word)) {
+            tokens.add(Token(['constant'], word, lineNumber));
           } else {
             tokens.add(Token(['identifier'], word, lineNumber));
           }
           continue;
         }
 
-        // 2. PROCESAR OPERADORES COMPUESTOS Y SIMPLES
-        if (Token.operators.contains(letter)) {
-          if (letter == '-' && i + 1 < line.length && line[i + 1] == '>') {
-            tokens.add(Token(['operator'], '->', lineNumber));
-            i += 2;
-          } else if (letter == '>' &&
-              i + 1 < line.length &&
-              line[i + 1] == '=') {
-            tokens.add(Token(['operator'], '>=', lineNumber));
-            i += 2;
-          } else if (letter == '<' &&
-              i + 1 < line.length &&
-              line[i + 1] == '=') {
-            tokens.add(Token(['operator'], '<=', lineNumber));
-            i += 2;
-          } else {
-            tokens.add(Token(['operator'], letter, lineNumber));
-            i++;
-          }
+        // 2. PROCESAR OPERADORES (Compuestos y Simples)
+        bool operatorMatched = true;
+        if (letter == '-' && i + 1 < line.length && line[i + 1] == '>') {
+          tokens.add(Token(['operator'], '->', lineNumber));
+          i += 2;
+        } else if (letter == '>' && i + 1 < line.length && line[i + 1] == '=') {
+          tokens.add(Token(['operator'], '>=', lineNumber));
+          i += 2;
+        } else if (letter == '<' && i + 1 < line.length && line[i + 1] == '=') {
+          tokens.add(Token(['operator'], '<=', lineNumber));
+          i += 2;
+        } else if (letter == '=' && i + 1 < line.length && line[i + 1] == '=') {
+          tokens.add(Token(['operator'], '==', lineNumber));
+          i += 2;
+        } else if (letter == '!' && i + 1 < line.length && line[i + 1] == '=') {
+          tokens.add(Token(['operator'], '!=', lineNumber));
+          i += 2;
+        } else if (Token.operators.contains(letter)) {
+          tokens.add(Token(['operator'], letter, lineNumber));
+          i++;
+        } else {
+          operatorMatched = false;
+        }
+        if (operatorMatched) continue;
+
+        // 3. PROCESAR SEPARADORES (incluyendo [])
+        if (letter == '[' && i + 1 < line.length && line[i + 1] == ']') {
+          tokens.add(Token(['separator'], '[]', lineNumber));
+          i += 2;
           continue;
         }
 
@@ -129,8 +150,8 @@ class ReaderFile {
           continue;
         }
 
-        // 4. PROCESAR ASIGNACION
-        if (Token.Op_Assingnment.contains(letter)) {
+        // 5. PROCESAR ASIGNACION
+        if (letter == Token.Op_Assingnment) {
           tokens.add(Token(['operator_assingnment'], letter, lineNumber));
           i++;
           continue;
@@ -142,6 +163,10 @@ class ReaderFile {
           while (i < line.length && Token.constants.contains(line[i])) {
             constant += line[i];
             i++;
+            if (i < line.length && line[i] == '.') {
+              constant += line[i];
+              i++;
+            }
           }
           tokens.add(Token(['constant'], constant, lineNumber));
           continue;
@@ -181,8 +206,7 @@ class SyntaxError implements Exception {
 
   @override
   String toString() {
-    int numLinea = line.indexOf(line) + 1;
-    return '\n❌ [Error Sintáctico]: Linea $numLinea: $line\n\n$message';
+    return '\n❌ [Error Sintáctico]: $line\n\n$message';
   }
 }
 
@@ -198,6 +222,8 @@ class Token {
   ];
 
   static const List<String> separators = [',', '.', ':', ';', '[', ']'];
+
+  static const List<String> dataTypes = ['int', 'float', 'string', 'bool'];
 
   static const List<String> constants = [
     'true',
@@ -215,7 +241,7 @@ class Token {
     '9',
   ];
 
-  static const Op_Assingnment = '=';
+  static const String Op_Assingnment = '=';
 
   static const List<String> operators = [
     '+',
@@ -228,6 +254,10 @@ class Token {
     '>',
     '<',
     '->',
+    '¬',
+    '==',
+    '!=',
+    '%',
   ];
 
   static const List<String> charactersNotAllowed = [
@@ -238,7 +268,6 @@ class Token {
     '&',
     '"',
     "'",
-    '!',
     '?',
     '\\',
     '|',
@@ -385,8 +414,7 @@ class Parser {
 
   void parseParForm() {
     if (currentToken.type.contains('identifier')) {
-      print('${currentToken.value}');
-      advance();
+      parseParArg();
     } else {
       throw SyntaxError(
         'Token no esperado: ${currentToken.value}',
@@ -406,7 +434,7 @@ class Parser {
       );
     }
 
-    if (currentToken.type.contains('identifier')) {
+    if (currentToken.type.contains('dataType')) {
       print('${currentToken.value}');
       advance();
     } else {
@@ -427,65 +455,216 @@ class Parser {
   }
 
   void parseExp() {
+    parseRelaction();
+    return;
+  }
+
+  void parseRelaction() {
+    if (currentToken.type.contains('operator') && currentToken.value == '¬') {
+      print('${currentToken.value}');
+      advance();
+      parseTerm();
+      return;
+    }
+
+    parseTerm();
+
     switch (currentToken.value) {
-      case _ when currentToken.type.contains('constant'):
-        print(currentToken.value);
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '>':
+        print('${currentToken.value}');
         advance();
-        return;
-
-      case _ when currentToken.type.contains('identifier'):
-        print(currentToken.value);
+        parseTerm();
+        break;
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '<':
+        print('${currentToken.value}');
         advance();
-        if (currentToken.type.contains('operator') &&
-            currentToken.value != '->') {
-          parseOper();
-        }
-        return;
-
-      case _ when currentToken.type.contains('keyword'):
-        if (currentToken.value == 'sea') {
-          print(currentToken.value);
-          advance();
-          parseDecLoc();
-        }
-
-        if (currentToken.value == 'caso') {
-          print(currentToken.value);
-          advance();
-          parseCondic();
-        }
-        return;
+        parseTerm();
+        break;
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '>=':
+        print('${currentToken.value}');
+        advance();
+        parseTerm();
+        break;
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '<=':
+        print('${currentToken.value}');
+        advance();
+        parseTerm();
+        break;
 
       case _
-          when currentToken.type.contains('delimiter') &&
-              currentToken.value == '(':
-        print(currentToken.value);
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '==':
+        print('${currentToken.value}');
         advance();
-        parseExp();
-        if (currentToken.type.contains('separator') &&
-            currentToken.value == ',') {
-          print(currentToken.value);
-          advance();
-          parseTuple();
-        }
-        if (currentToken.value == ')') {
-          print(currentToken.value);
-          advance();
-        }
-        return;
+        parseTerm();
+        break;
+
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '!=':
+        print('${currentToken.value}');
+        advance();
+        parseTerm();
+        break;
 
       default:
-        throw SyntaxError(
-          'Token no esperado: ${currentToken.value}',
-          lines[currentToken.line],
-          currentToken.value,
-        );
+        return;
     }
   }
 
-  void parseDecLoc() {
+  void parseTerm() {
+    parseProduct();
+
+    switch (currentToken.value) {
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '+':
+        print('${currentToken.value}');
+        advance();
+        parseProduct();
+        break;
+      case _
+          when currentToken.type.contains('operator') &&
+              currentToken.value == '-':
+        print('${currentToken.value}');
+        advance();
+        parseProduct();
+        break;
+      default:
+        return;
+    }
+
+    if (currentToken.type.contains('operator') && currentToken.value != '->') {
+      print('${currentToken.value}');
+      advance();
+      parseRelaction();
+    }
+  }
+
+  void parseProduct() {
+    parsePower();
+
+    if (currentToken.type.contains('operator')) {
+      switch (currentToken.value) {
+        case _
+            when currentToken.type.contains('operator') &&
+                currentToken.value == '*':
+          print('${currentToken.value}');
+          advance();
+          parsePower();
+          break;
+        case _
+            when currentToken.type.contains('operator') &&
+                currentToken.value == '/':
+          print('${currentToken.value}');
+          advance();
+          parsePower();
+          break;
+        case _
+            when currentToken.type.contains('operator') &&
+                currentToken.value == '%':
+          print('${currentToken.value}');
+          advance();
+          parsePower();
+          break;
+        default:
+          return;
+      }
+    }
+
+    if (currentToken.type.contains('operator') && currentToken.value != '->') {
+      print('${currentToken.value}');
+      advance();
+      parseRelaction();
+    }
+  }
+
+  void parsePower() {
+    parseFactor();
+
+    if (currentToken.type.contains('operator') && currentToken.value == '^') {
+      print('${currentToken.value}');
+      advance();
+      parseFactor();
+    }
+
+    if (currentToken.type.contains('operator') && currentToken.value != '->') {
+      print('${currentToken.value}');
+      advance();
+      parseRelaction();
+    }
+
+    return;
+  }
+
+  void parseFactor() {
+    final token = currentToken;
+    if (token.type.contains('constant')) {
+      parseConst();
+    } else if (token.type.contains('keyword') && token.value == 'caso') {
+      parseCase();
+    } else if (token.type.contains('keyword') && token.value == 'sea') {
+      parseDecLocal();
+    } else if (token.type.contains('identifier')) {
+      parseIDorFunction();
+    } else if (token.value == '(') {
+      parseTupleOrAgroup();
+    } else {
+      throw SyntaxError(
+        'Se esperaba una constante, "sea", "caso", un identificador o "(", pero se encontró: ${token.value}',
+        lines[token.line],
+        token.value,
+      );
+    }
+  }
+
+  void parseConst() {
+    if (currentToken.type.contains('constant')) {
+      print('${currentToken.value}');
+      advance();
+    }
+    return;
+  }
+
+  parseDecLocal() {
+    print('Comienzo de la declaracion');
+    if (currentToken.type.contains('keyword') && currentToken.value == 'sea') {
+      print('${currentToken.value}');
+      advance();
+      parseDecLocalDef();
+    } else {
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value}',
+        lines[currentToken.line],
+        currentToken.value,
+      );
+    }
+    print('Mitad de la declaracion');
+    if (currentToken.type.contains('keyword') && currentToken.value == 'en') {
+      print('${currentToken.value}');
+      advance();
+      parseExp();
+    } else {
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value}',
+        lines[currentToken.line],
+        currentToken.value,
+      );
+    }
+    return;
+  }
+
+  void parseDecLocalDef() {
     if (currentToken.type.contains('identifier')) {
-      print(currentToken.value);
+      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -497,7 +676,7 @@ class Parser {
 
     if (currentToken.type.contains('operator_assingnment') &&
         currentToken.value == '=') {
-      print(currentToken.value);
+      print('=');
       advance();
     } else {
       throw SyntaxError(
@@ -510,32 +689,18 @@ class Parser {
     parseExp();
 
     if (currentToken.type.contains('separator') && currentToken.value == ',') {
-      print(currentToken.value);
+      print('${currentToken.value}');
       advance();
-      parseDecLoc();
+      parseDecLocalDef();
     }
 
-    if (currentToken.type.contains('keyword') && currentToken.value == 'en') {
-      print(currentToken.value);
-      advance();
-    } else {
-      throw SyntaxError(
-        'Token no esperado: ${currentToken.value}',
-        lines[currentToken.line],
-        currentToken.value,
-      );
-    }
-
-    parseExp();
+    return;
   }
 
-  void parseCondic() {
-    parseExp();
-
-    if (currentToken.type.contains('operator') && currentToken.value == '->') {
-      print(currentToken.value);
+  void parseCase() {
+    if (currentToken.type.contains('keyword') && currentToken.value == 'caso') {
+      print('${currentToken.value}');
       advance();
-      parseExp();
     } else {
       throw SyntaxError(
         'Token no esperado: ${currentToken.value}',
@@ -543,45 +708,109 @@ class Parser {
         currentToken.value,
       );
     }
-
-    if (currentToken.type.contains('separator') && currentToken.value == '[]') {
-      print(currentToken.value);
-      advance();
-      parseCondic();
-    }
-
+    parseDefCase();
     if (currentToken.type.contains('keyword') &&
         currentToken.value == 'fcaso') {
-      print(currentToken.value);
+      print('${currentToken.value}');
       advance();
-      return;
+    } else {
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value}',
+        lines[currentToken.line],
+        currentToken.value,
+      );
     }
+    return;
   }
 
-  void parseTuple() {
+  void parseDefCase() {
+    print('Definicion de caso');
+    parseExp();
+    if (currentToken.type.contains('operator') && currentToken.value == '->') {
+      print('${currentToken.value}');
+      advance();
+    } else {
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value}',
+        lines[currentToken.line],
+        currentToken.value,
+      );
+    }
+    print('Fin o se encontro un repetidor de casos');
+    parseExp();
+    if (currentToken.type.contains('separator') && currentToken.value == '[]') {
+      print('${currentToken.value}');
+      advance();
+      parseDefCase();
+    }
+    return;
+  }
+
+  void parseIDorFunction() {
+    print('Se encontro un identificador');
+    if (currentToken.type.contains('identifier')) {
+      print('${currentToken.value}');
+      advance();
+    }
+    if (currentToken.type.contains('delimiter') && currentToken.value == '(') {
+      print('Se encontro un parentesis de apertura, es decir, una funcion');
+      print('${currentToken.value}');
+      advance();
+      parseParArg();
+      if (currentToken.type.contains('delimiter') &&
+          currentToken.value == ')') {
+        print('${currentToken.value}');
+        advance();
+      }
+    }
+    return;
+  }
+
+  void parseParArg() {
     parseExp();
     if (currentToken.type.contains('separator') && currentToken.value == ',') {
-      print(currentToken.value);
+      print('${currentToken.value}');
       advance();
-      parseTuple();
+      parseParArg();
+    }
+    return;
+  }
+
+  void parseTupleOrAgroup() {
+    print('Se encontro un parentesis de apertura');
+    if (currentToken.type.contains('delimiter') && currentToken.value == '(') {
+      print('${currentToken.value}');
+      advance();
     } else {
-      return;
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value} se esperaba un parentesis de apertura "("',
+        lines[currentToken.line],
+        currentToken.value,
+      );
     }
-  }
-
-  void parseOper() {
-    if (currentToken.type.contains('operator')) {
-      print(currentToken.value);
+    print('Contenido del parentesis');
+    parseParTuple();
+    print('Se encontro un parentesis de cierre');
+    if (currentToken.type.contains('delimiter') && currentToken.value == ')') {
+      print('${currentToken.value}');
       advance();
-      parseExp();
+    } else {
+      throw SyntaxError(
+        'Token no esperado: ${currentToken.value}, se esperaba un parentesis de cierre ")"',
+        lines[currentToken.line],
+        currentToken.value,
+      );
     }
+    return;
   }
 
-  void parseTerm(List<Token> tokens) {}
-
-  void parseFactor(List<Token> tokens) {}
-
-  void parseConst(List<Token> tokens) {}
-
-  void parseId(List<Token> tokens) {}
+  void parseParTuple() {
+    parseExp();
+    if (currentToken.type.contains('separator') && currentToken.value == ',') {
+      print('${currentToken.value}');
+      advance();
+      parseParTuple();
+    }
+    return;
+  }
 }
