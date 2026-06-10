@@ -2,7 +2,7 @@ import 'dart:io';
 
 void main(List<String> args) {
   if (args.isEmpty) {
-    print('Usage: main.dart <file.esp>');
+    print('Usage: main.dart usa --help para obtener ayuda.');
   }
 
   if (args.contains('--help')) {
@@ -25,12 +25,15 @@ void main(List<String> args) {
   if (args.contains('--analyze')) {
     print('Analizando ${args[1]}, por favor aguarde...');
     try {
+      final Stopwatch stopwatch = Stopwatch()..start();
       ReaderFile file = ReaderFile(args[1]);
       List<String> content = file.read();
       List<Token> tokens = file.extractTokens();
       Parser parser = Parser(tokens, content);
       parser.parseProg();
       print('Analisis OK');
+      stopwatch.stop();
+      print('Tiempo de ejecucion: ${stopwatch.elapsedMilliseconds} ms');
     } catch (e) {
       print(e);
     }
@@ -130,16 +133,16 @@ class ReaderFile {
 
         // 3. PROCESAR SEPARADORES
         if (Token.separators.contains(letter)) {
-          if (letter == '[' &&
-              i + 1 < line.length &&
-              Token.separators.contains(line[i + 1]) &&
-              line[i + 1] == ']') {
-            tokens.add(Token(['separator'], '[]', lineNumber));
-            i += 2;
-          } else {
-            tokens.add(Token(['separator'], letter, lineNumber));
+          String separators = '';
+          while (i < line.length && Token.separators.contains(line[i])) {
+            separators += line[i];
             i++;
+            if (i < line.length && line[i] == '.') {
+              separators += line[i];
+              i++;
+            }
           }
+          tokens.add(Token(['separator'], separators, lineNumber));
           continue;
         }
 
@@ -178,7 +181,6 @@ class ReaderFile {
         i++;
       }
     }
-    print(tokens.join('\n'));
     return tokens;
   }
 }
@@ -221,7 +223,7 @@ class Token {
     'ffun',
   ];
 
-  static const List<String> separators = [',', '.', ':', ';', '[', ']'];
+  static const List<String> separators = [',', '.', ':', ';', '[]'];
 
   static const List<String> dataTypes = ['int', 'float', 'string', 'bool'];
 
@@ -276,7 +278,7 @@ class Token {
     '`',
   ];
 
-  static const List<String> delimiters = ['(', ')'];
+  static const List<String> delimiters = ['(', ')', '[', ']'];
 
   final List<String> type;
   final String value;
@@ -306,7 +308,6 @@ class Parser {
   void parseProg() {
     // Comienza el analisis sintactico
     if (currentToken.value == 'fun') {
-      print('fun');
       advance();
     } else {
       throw SyntaxError(
@@ -317,7 +318,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('identifier')) {
-      print(currentToken.value);
       advance();
     } else {
       throw SyntaxError(
@@ -328,7 +328,6 @@ class Parser {
     }
 
     if (currentToken.value == '(') {
-      print('(');
       advance();
     } else {
       throw SyntaxError(
@@ -341,7 +340,6 @@ class Parser {
     parseParForm();
 
     if (currentToken.value == ')') {
-      print(')');
       advance();
     } else {
       throw SyntaxError(
@@ -352,7 +350,6 @@ class Parser {
     }
 
     if (currentToken.value == 'dev') {
-      print('dev');
       advance();
     } else {
       throw SyntaxError(
@@ -363,7 +360,6 @@ class Parser {
     }
 
     if (currentToken.value == '(') {
-      print('(');
       advance();
     } else {
       throw SyntaxError(
@@ -376,7 +372,6 @@ class Parser {
     parseParForm();
 
     if (currentToken.value == ')') {
-      print(')');
       advance();
     } else {
       throw SyntaxError(
@@ -388,7 +383,6 @@ class Parser {
 
     if (currentToken.type.contains('operator_assingnment') &&
         currentToken.value == '=') {
-      print('=');
       advance();
     } else {
       throw SyntaxError(
@@ -401,7 +395,6 @@ class Parser {
     parseExp();
 
     if (currentToken.value == 'ffun') {
-      print('ffun');
       advance();
     } else {
       throw SyntaxError(
@@ -424,7 +417,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('separator') && currentToken.value == ':') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -435,7 +427,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('dataType')) {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -446,7 +437,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('separator') && currentToken.value == ';') {
-      print('${currentToken.value}');
       advance();
       parseParForm();
     } else {
@@ -461,7 +451,6 @@ class Parser {
 
   void parseRelaction() {
     if (currentToken.type.contains('operator') && currentToken.value == '¬') {
-      print('${currentToken.value}');
       advance();
       parseTerm();
       return;
@@ -473,28 +462,24 @@ class Parser {
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '>':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '<':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '>=':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '<=':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
@@ -502,7 +487,6 @@ class Parser {
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '==':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
@@ -510,7 +494,6 @@ class Parser {
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '!=':
-        print('${currentToken.value}');
         advance();
         parseTerm();
         break;
@@ -527,14 +510,12 @@ class Parser {
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '+':
-        print('${currentToken.value}');
         advance();
         parseProduct();
         break;
       case _
           when currentToken.type.contains('operator') &&
               currentToken.value == '-':
-        print('${currentToken.value}');
         advance();
         parseProduct();
         break;
@@ -543,7 +524,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('operator') && currentToken.value != '->') {
-      print('${currentToken.value}');
       advance();
       parseRelaction();
     }
@@ -557,21 +537,18 @@ class Parser {
         case _
             when currentToken.type.contains('operator') &&
                 currentToken.value == '*':
-          print('${currentToken.value}');
           advance();
           parsePower();
           break;
         case _
             when currentToken.type.contains('operator') &&
                 currentToken.value == '/':
-          print('${currentToken.value}');
           advance();
           parsePower();
           break;
         case _
             when currentToken.type.contains('operator') &&
                 currentToken.value == '%':
-          print('${currentToken.value}');
           advance();
           parsePower();
           break;
@@ -581,7 +558,6 @@ class Parser {
     }
 
     if (currentToken.type.contains('operator') && currentToken.value != '->') {
-      print('${currentToken.value}');
       advance();
       parseRelaction();
     }
@@ -591,13 +567,11 @@ class Parser {
     parseFactor();
 
     if (currentToken.type.contains('operator') && currentToken.value == '^') {
-      print('${currentToken.value}');
       advance();
       parseFactor();
     }
 
     if (currentToken.type.contains('operator') && currentToken.value != '->') {
-      print('${currentToken.value}');
       advance();
       parseRelaction();
     }
@@ -614,7 +588,7 @@ class Parser {
     } else if (token.type.contains('keyword') && token.value == 'sea') {
       parseDecLocal();
     } else if (token.type.contains('identifier')) {
-      parseIDorFunction();
+      parseIDOrFunctionOrVector();
     } else if (token.value == '(') {
       parseTupleOrAgroup();
     } else {
@@ -628,16 +602,13 @@ class Parser {
 
   void parseConst() {
     if (currentToken.type.contains('constant')) {
-      print('${currentToken.value}');
       advance();
     }
     return;
   }
 
   parseDecLocal() {
-    print('Comienzo de la declaracion');
     if (currentToken.type.contains('keyword') && currentToken.value == 'sea') {
-      print('${currentToken.value}');
       advance();
       parseDecLocalDef();
     } else {
@@ -647,9 +618,7 @@ class Parser {
         currentToken.value,
       );
     }
-    print('Mitad de la declaracion');
     if (currentToken.type.contains('keyword') && currentToken.value == 'en') {
-      print('${currentToken.value}');
       advance();
       parseExp();
     } else {
@@ -664,7 +633,6 @@ class Parser {
 
   void parseDecLocalDef() {
     if (currentToken.type.contains('identifier')) {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -676,7 +644,6 @@ class Parser {
 
     if (currentToken.type.contains('operator_assingnment') &&
         currentToken.value == '=') {
-      print('=');
       advance();
     } else {
       throw SyntaxError(
@@ -689,7 +656,6 @@ class Parser {
     parseExp();
 
     if (currentToken.type.contains('separator') && currentToken.value == ',') {
-      print('${currentToken.value}');
       advance();
       parseDecLocalDef();
     }
@@ -699,7 +665,6 @@ class Parser {
 
   void parseCase() {
     if (currentToken.type.contains('keyword') && currentToken.value == 'caso') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -711,7 +676,6 @@ class Parser {
     parseDefCase();
     if (currentToken.type.contains('keyword') &&
         currentToken.value == 'fcaso') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -724,10 +688,8 @@ class Parser {
   }
 
   void parseDefCase() {
-    print('Definicion de caso');
     parseExp();
     if (currentToken.type.contains('operator') && currentToken.value == '->') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -736,40 +698,41 @@ class Parser {
         currentToken.value,
       );
     }
-    print('Fin o se encontro un repetidor de casos');
     parseExp();
     if (currentToken.type.contains('separator') && currentToken.value == '[]') {
-      print('${currentToken.value}');
       advance();
       parseDefCase();
     }
     return;
   }
 
-  void parseIDorFunction() {
-    print('Se encontro un identificador');
+  void parseIDOrFunctionOrVector() {
     if (currentToken.type.contains('identifier')) {
-      print('${currentToken.value}');
       advance();
     }
     if (currentToken.type.contains('delimiter') && currentToken.value == '(') {
-      print('Se encontro un parentesis de apertura, es decir, una funcion');
-      print('${currentToken.value}');
       advance();
       parseParArg();
       if (currentToken.type.contains('delimiter') &&
           currentToken.value == ')') {
-        print('${currentToken.value}');
         advance();
       }
     }
+    if (currentToken.type.contains('delimiter') && currentToken.value == '[') {
+      advance();
+      parseExp();
+      if (currentToken.type.contains('delimiter') &&
+          currentToken.value == ']') {
+        advance();
+      }
+    }
+
     return;
   }
 
   void parseParArg() {
     parseExp();
     if (currentToken.type.contains('separator') && currentToken.value == ',') {
-      print('${currentToken.value}');
       advance();
       parseParArg();
     }
@@ -777,9 +740,7 @@ class Parser {
   }
 
   void parseTupleOrAgroup() {
-    print('Se encontro un parentesis de apertura');
     if (currentToken.type.contains('delimiter') && currentToken.value == '(') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -788,11 +749,8 @@ class Parser {
         currentToken.value,
       );
     }
-    print('Contenido del parentesis');
     parseParTuple();
-    print('Se encontro un parentesis de cierre');
     if (currentToken.type.contains('delimiter') && currentToken.value == ')') {
-      print('${currentToken.value}');
       advance();
     } else {
       throw SyntaxError(
@@ -807,7 +765,6 @@ class Parser {
   void parseParTuple() {
     parseExp();
     if (currentToken.type.contains('separator') && currentToken.value == ',') {
-      print('${currentToken.value}');
       advance();
       parseParTuple();
     }
