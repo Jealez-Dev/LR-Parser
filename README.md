@@ -18,6 +18,7 @@ ese Parser esta diseñado para el siguiente ENBF, basado en un lenguaje recursiv
 
 (* Átomo: todas las expresiones básicas, sin operadores infijos *)
 <ExpAtom> ::= <Const>
+            | <Op_Unaria>
             | <fun_or_var>
             | <Tupla>
             | <Cond>
@@ -25,6 +26,7 @@ ese Parser esta diseñado para el siguiente ENBF, basado en un lenguaje recursiv
             | '(' <Exp> ')'
 
 <fun_or_var> ::= <id> ['(' <ParAct> ')']
+<lista> ::= <id> '[' <Exp> ']'
 
 <ParAct> ::= <Exp> { ',' <Exp> } *
 

@@ -405,6 +405,18 @@ class Parser {
         currentToken.value,
       );
     }
+
+    // Si el siguiente token es 'fun', parseamos otra función.
+    // Si no hay más tokens (cadena vacía), el análisis termina correctamente.
+    if (currentToken.value == 'fun') {
+      parseProg();
+    } else if (currentToken.value != '') {
+      throw SyntaxError(
+        'Se esperaba "fun" o el fin del archivo',
+        lines[currentToken.line],
+        currentToken.value,
+      );
+    }
   }
 
   void parseParForm() {
@@ -634,6 +646,7 @@ class Parser {
     if (currentToken.type.contains('identifier')) {
       advance();
 
+      // Bucle para manejar f(x)[i] o c[i][j]
       while (true) {
         if (currentToken.value == '(') {
           advance();
