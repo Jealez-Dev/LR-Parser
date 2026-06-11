@@ -16,23 +16,23 @@ Bloque 1: Completed
 
 Bloque 2: Redacción de la EBNF y Diseño del Parser — 1 Hora
 
-    [ ] Redactar el documento README escribiendo formalmente la especificación en formato EBNF del lenguaje recursivo LR basándote en la sintaxis provista.
+    [x] Redactar el documento README escribiendo formalmente la especificación en formato EBNF del lenguaje recursivo LR basándote en la sintaxis provista.
 
-    [ ] Modelar mediante el paradigma orientado a objetos los elementos sintácticos indispensables (estructuras jerárquicas simples para expresiones e instrucciones si planeas validar mediante nodos).
+    [x] Modelar mediante el paradigma orientado a objetos los elementos sintácticos indispensables (estructuras jerárquicas simples para expresiones e instrucciones si planeas validar mediante nodos).
 
-    [ ] Mapear mental u operativamente cada regla gramatical (<Prog>, <ParForm>, <Exp>, etc.) a una función específica que controlará el flujo del análisis.
+    [x] Mapear mental u operativamente cada regla gramatical (<Prog>, <ParForm>, <Exp>, etc.) a una función específica que controlará el flujo del análisis.
 
 Bloque 2: Init
 
 Bloque 3: Implementación del Analizador Sintáctico (Parser) — 1.5 Horas
 
-    [ ] Escribir el cuerpo del Parser de Descenso Recursivo, creando las funciones principales correspondientes a cada producción gramatical (ej. parseProg(), parseParForm(), parseExp()).
+    [x] Escribir el cuerpo del Parser de Descenso Recursivo, creando las funciones principales correspondientes a cada producción gramatical (ej. parseProg(), parseParForm(), parseExp()).
 
-    [ ] Implementar un método auxiliar de verificación (comúnmente llamado match o consume) que compare el token actual con el esperado, avanzando en la lista de tokens si coincide.
+    [x] Implementar un método auxiliar de verificación (comúnmente llamado match o consume) que compare el token actual con el esperado, avanzando en la lista de tokens si coincide.
 
-    [ ] Asegurar el correcto flujo recursivo del lenguaje LR, prestando especial atención a las expresiones anidadas y las cláusulas como <Condic> o <DecLoc>.
+    [x] Asegurar el correcto flujo recursivo del lenguaje LR, prestando especial atención a las expresiones anidadas y las cláusulas como <Condic> o <DecLoc>.
 
-    [ ] Integrar el sistema de control de fallos: ante cualquier discrepancia gramatical, el parser debe capturar la línea exacta del token en conflicto, imprimir la naturaleza del error sintáctico y abortar el proceso de inmediato.
+    [x] Integrar el sistema de control de fallos: ante cualquier discrepancia gramatical, el parser debe capturar la línea exacta del token en conflicto, imprimir la naturaleza del error sintáctico y abortar el proceso de inmediato.
 
 Bloque 4: Pruebas de Software y Optimización — 1 Hora
 
