@@ -1,5 +1,6 @@
 import 'Lexer.dart';
 import 'Parser.dart';
+import 'IDE.dart';
 
 void main(List<String> args) {
   if (args.isEmpty) {
@@ -16,11 +17,11 @@ void main(List<String> args) {
   }
 
   if (args.contains('--ide')) {
-    print('Not yet implemented, please use --help for more information.');
+    IDE();
   }
 
   if (args.contains('--version')) {
-    print('LR Parser v0.0.1');
+    print('LR Parser v1.1.0');
   }
 
   if (args.contains('--analyze')) {
